@@ -1,6 +1,32 @@
 import os
 from datetime import datetime
 from flask import Flask, render_template, redirect, url_for, flash, request
+from werkzeug.utils import secure_filename
+from flask import Flask, render_template, redirect, url_for, flash, request
+from werkzeug.utils import secure_filename
+
+# --- Placeholder para la extracción de datos del comprobante ---
+def extract_data_from_comprobante(file_path):
+    """
+    Función placeholder para simular la extracción de datos de un comprobante.
+    En una implementación real, esto usaría OCR o una API de procesamiento de documentos.
+    Retorna un diccionario con los datos extraídos o None si falla.
+    """
+    # Simulación: 50% de probabilidad de éxito
+    import random
+    if random.random() < 0.5: # Simula un fallo en la lectura
+        return None
+    else:
+        # Datos de ejemplo (ajustar según el formato real del comprobante)
+        return {
+            'proof_number': 'COMPR-12345',
+            'amount': 150.75,
+            'origin_account': 'ES12345678901234567890',
+            'destination_account': 'ES09876543210987654321',
+            'timestamp': datetime.now(),
+            'description': 'Depósito automático por comprobante'
+        }
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -40,6 +66,9 @@ class Deposit(db.Model):
     description = db.Column(db.String(200), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    proof_number = db.Column(db.String(100), nullable=True) # Nuevo campo
+    origin_account = db.Column(db.String(100), nullable=True) # Nuevo campo
+    destination_account = db.Column(db.String(100), nullable=True) # Nuevo campo
     # Este ID ahora se refiere al usuario al que pertenece el depósito
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     # ID del admin que crea el depósito
