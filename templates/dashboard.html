@@ -23,17 +23,15 @@
     
     <!-- Suma Total del Sistema -->
     <div class="card total-sum-card">
-        <h2>Suma Total del Sistema</h2>
-        <p>${{ "%.2f"|format(total_sum) }}</p>
+        <h2>Suma Total Aporte Socios</h2>
+        <p>${{ "%.2f"|format(global_total_sum) }}</p>
     </div>
 
-    <!-- Suma Personal (Solo para Admins) -->
-    {% if current_user.is_admin and admin_personal_sum is not none %}
+    <!-- Suma Personal -->
     <div class="card" style="background-color: #fff; color: #333; text-align: center;">
-        <h2>Suma de Mis Depósitos Recibidos</h2>
-        <p style="color: #2E7D32; font-size: 2.5rem; font-weight: bold; margin-top: 0.5rem;">${{ "%.2f"|format(admin_personal_sum) }}</p>
+        <h2>Suma de Mis Depósitos Realizados</h2>
+        <p style="color: #2E7D32; font-size: 2.5rem; font-weight: bold; margin-top: 0.5rem;">${{ "%.2f"|format(personal_total_sum) }}</p>
     </div>
-    {% endif %}
 
 </div>
 

@@ -93,20 +93,18 @@ def index():
 def dashboard():
     page = request.args.get('page', 1, type=int)
     
-    admin_personal_sum = None  # Inicializar
+    # Suma total de todos los depósitos en el sistema (visible para todos)
+    global_total_sum = db.session.query(db.func.sum(Deposit.amount)).scalar() or 0
+
+    # Suma de los depósitos personales del usuario actual (recibidos por él)
+    personal_total_sum = db.session.query(db.func.sum(Deposit.amount)).filter(Deposit.recipient_id == current_user.id).scalar() or 0
 
     if current_user.is_admin:
         # El admin ve todos los depósitos con paginación, ordenados por fecha
         deposits_query = Deposit.query.order_by(Deposit.timestamp.desc())
-        # La suma total de todos los depósitos en el sistema
-        total_sum = db.session.query(db.func.sum(Deposit.amount)).scalar() or 0
-        # Suma de los depósitos personales del admin
-        admin_personal_sum = db.session.query(db.func.sum(Deposit.amount)).filter(Deposit.recipient_id == current_user.id).scalar() or 0
     else:
         # Un usuario normal solo ve sus propios depósitos, ordenados por fecha
         deposits_query = current_user.deposits.order_by(Deposit.timestamp.desc())
-        # Calculamos la suma total de los depósitos del usuario
-        total_sum = db.session.query(db.func.sum(Deposit.amount)).filter(Deposit.recipient_id == current_user.id).scalar() or 0
 
     # Se usará un máximo de 5 depósitos por página
     deposits_pagination = deposits_query.paginate(page=page, per_page=5, error_out=False)
@@ -115,9 +113,9 @@ def dashboard():
     return render_template(
         'dashboard.html', 
         deposits=deposits, 
-        total_sum=total_sum, 
-        pagination=deposits_pagination,
-        admin_personal_sum=admin_personal_sum
+        global_total_sum=global_total_sum, 
+        personal_total_sum=personal_total_sum,
+        pagination=deposits_pagination
     )
 
 # --- Rutas de Depósitos (CRUD para Admins) ---
