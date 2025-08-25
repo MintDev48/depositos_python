@@ -93,11 +93,15 @@ def index():
 def dashboard():
     page = request.args.get('page', 1, type=int)
     
+    admin_personal_sum = None  # Inicializar
+
     if current_user.is_admin:
         # El admin ve todos los depósitos con paginación, ordenados por fecha
         deposits_query = Deposit.query.order_by(Deposit.timestamp.desc())
         # La suma total de todos los depósitos en el sistema
         total_sum = db.session.query(db.func.sum(Deposit.amount)).scalar() or 0
+        # Suma de los depósitos personales del admin
+        admin_personal_sum = db.session.query(db.func.sum(Deposit.amount)).filter(Deposit.recipient_id == current_user.id).scalar() or 0
     else:
         # Un usuario normal solo ve sus propios depósitos, ordenados por fecha
         deposits_query = current_user.deposits.order_by(Deposit.timestamp.desc())
@@ -108,15 +112,20 @@ def dashboard():
     deposits_pagination = deposits_query.paginate(page=page, per_page=5, error_out=False)
     deposits = deposits_pagination.items
 
-    return render_template('dashboard.html', deposits=deposits, total_sum=total_sum, pagination=deposits_pagination)
+    return render_template(
+        'dashboard.html', 
+        deposits=deposits, 
+        total_sum=total_sum, 
+        pagination=deposits_pagination,
+        admin_personal_sum=admin_personal_sum
+    )
 
 # --- Rutas de Depósitos (CRUD para Admins) ---
 @app.route('/deposit/new', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def create_deposit():
-    # Solo usuarios normales pueden recibir depósitos
-    users = User.query.filter_by(role='normal').all()
+    users = User.query.all()
     if request.method == 'POST':
         description = request.form['description']
         amount = float(request.form['amount'])
@@ -133,7 +142,7 @@ def create_deposit():
 @admin_required
 def edit_deposit(deposit_id):
     deposit = Deposit.query.get_or_404(deposit_id)
-    users = User.query.filter_by(role='normal').all()
+    users = User.query.all()
     if request.method == 'POST':
         deposit.description = request.form['description']
         deposit.amount = float(request.form['amount'])

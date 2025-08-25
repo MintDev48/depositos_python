@@ -18,10 +18,23 @@
     {% endif %}
 </div>
 
-<!-- Bloque de Suma Total -->
-<div class="card total-sum-card">
-    <h2>Suma Total de Depósitos</h2>
-    <p>${{ "%.2f"|format(total_sum) }}</p>
+<!-- Bloques de Sumas -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+    
+    <!-- Suma Total del Sistema -->
+    <div class="card total-sum-card">
+        <h2>Suma Total del Sistema</h2>
+        <p>${{ "%.2f"|format(total_sum) }}</p>
+    </div>
+
+    <!-- Suma Personal (Solo para Admins) -->
+    {% if current_user.is_admin and admin_personal_sum is not none %}
+    <div class="card" style="background-color: #fff; color: #333; text-align: center;">
+        <h2>Suma de Mis Depósitos Recibidos</h2>
+        <p style="color: #2E7D32; font-size: 2.5rem; font-weight: bold; margin-top: 0.5rem;">${{ "%.2f"|format(admin_personal_sum) }}</p>
+    </div>
+    {% endif %}
+
 </div>
 
 <!-- Tabla de Depósitos -->
