@@ -1,0 +1,52 @@
+
+# --- INSTRUCCIONES PARA LA INSTALACIÓN Y EJECUCIÓN DEL PROYECTO ---
+
+## PASO 1: Crear el Entorno Virtual
+
+# Un entorno virtual es una carpeta que contiene una instalación de Python aislada del resto del sistema.
+# Esto es una buena práctica para que las dependencias de este proyecto no entren en conflicto con otros.
+# Abre una terminal en la carpeta raíz del proyecto y ejecuta el siguiente comando:
+
+python -m venv venv
+
+
+## PASO 2: Activar el Entorno Virtual
+
+# Una vez creado, necesitas "activar" el entorno. Esto le dice a la terminal que use la versión de Python
+# y las librerías que están dentro de la carpeta 'venv'.
+# En la misma terminal, ejecuta (para Windows):
+
+.\venv\Scripts\activate
+
+# Sabrás que está activado porque el nombre de tu línea de comandos empezará con "(venv)".
+
+
+## PASO 3: Instalar las Dependencias
+
+# El archivo 'requirements.txt' contiene la lista de todas las librerías de Python que el proyecto necesita.
+# Con el entorno activado, ejecuta el siguiente comando para instalarlas todas de golpe:
+
+pip install -r requirements.txt
+
+
+## PASO 4: Ejecutar la Aplicación
+
+# Una vez instaladas las dependencias, ya puedes iniciar la aplicación.
+# El archivo 'app.py' creará la base de datos 'deposits.db' y los usuarios por defecto la primera vez que se inicie.
+
+python app.py
+
+# La aplicación estará funcionando en la dirección: http://127.0.0.1:5000
+
+
+# --- USUARIOS POR DEFECTO ---
+
+# La aplicación crea dos usuarios para que puedas probarla inmediatamente:
+
+# 1. Administrador:
+#    - Usuario: admin
+#    - Contraseña: admin
+
+# 2. Usuario Normal de Ejemplo:
+#    - Usuario: usuario_normal
+#    - Contraseña: normal123

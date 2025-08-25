@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel de Depósitos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        {% if current_user.is_admin %}
+            Todos los Depósitos
+        {% else %}
+            Mis Depósitos
+        {% endif %}
+    </h1>
+    {% if current_user.is_admin %}
+        <a href="{{ url_for('create_deposit') }}" class="btn btn-primary">
+            Añadir Nuevo Depósito
+        </a>
+    {% endif %}
+</div>
+
+<!-- Bloque de Suma Total -->
+<div class="card total-sum-card">
+    <h2>Suma Total de Depósitos</h2>
+    <p>${{ "%.2f"|format(total_sum) }}</p>
+</div>
+
+<!-- Tabla de Depósitos -->
+<div class="card">
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Fecha y Hora</th>
+                    <th>Monto</th>
+                    {% if current_user.is_admin %}
+                        <th>Asignado a</th>
+                        <th>Creado por</th>
+                        <th>Acciones</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for deposit in deposits %}
+                <tr>
+                    <td>{{ deposit.description }}</td>
+                    <td>{{ deposit.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td>${{ "%.2f"|format(deposit.amount) }}</td>
+                    {% if current_user.is_admin %}
+                        <td>{{ deposit.recipient.username }}</td>
+                        <td>{{ deposit.creator.username }}</td>
+                        <td>
+                            <div class="table-actions">
+                                <a href="{{ url_for('edit_deposit', deposit_id=deposit.id) }}" class="btn btn-warning">Editar</a>
+                                <form action="{{ url_for('delete_deposit', deposit_id=deposit.id) }}" method="POST" onsubmit="return confirm('¿Estás seguro?');">
+                                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="{% if current_user.is_admin %}6{% else %}3{% endif %}" style="text-align: center; padding: 2rem;">No hay depósitos para mostrar.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Controles de Paginación -->
+{% if pagination and pagination.total > pagination.per_page %}
+<div class="pagination">
+    <div class="pagination-info">
+        Mostrando <b>{{ pagination.items|length }}</b> de <b>{{ pagination.total }}</b> resultados
+    </div>
+    <div class="pagination-links">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('dashboard', page=pagination.prev_num) }}">&laquo; Anterior</a>
+        {% endif %}
+        {% for page_num in pagination.iter_pages() %}
+            {% if page_num %}
+                <a href="{{ url_for('dashboard', page=page_num) }}" class="{{ 'active' if page_num == pagination.page else '' }}">{{ page_num }}</a>
+            {% else %}
+                <span class="ellipsis">…</span>
+            {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+            <a href="{{ url_for('dashboard', page=pagination.next_num) }}">Siguiente &raquo;</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
