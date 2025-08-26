@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Subir Comprobante de Depósito{% endblock %}
+
+{% block content %}
+<div class="card" style="padding-bottom: 2rem;">
+    <h1 class="page-title">Subir y Confirmar Depósito</h1>
+    <p>Sube una imagen de tu comprobante. El sistema intentará leer los datos automáticamente para que los revises.</p>
+    
+    <form id="depositForm" method="POST" action="{{ url_for('upload_deposit') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="comprobante">Archivo del Comprobante (imagen)</label>
+            <input type="file" class="form-control" id="comprobanteInput" name="comprobante" required accept="image/*">
+        </div>
+
+        <div id="loadingSpinner" style="display: none; text-align: center; margin: 20px 0;">
+            <div class="spinner"></div>
+            <p>Procesando comprobante...</p>
+        </div>
+
+        <div id="reviewSection" style="display: none;">
+            <div class="review-layout">
+                <div class="review-form">
+                    <div class="form-group">
+                        <label for="proof_number">Nro. Comprobante</label>
+                        <input type="text" class="form-control" id="proof_number" name="proof_number" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Monto</label>
+                        <input type="number" step="0.01" class="form-control" id="amount" name="amount" value="" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="timestamp">Fecha y Hora</label>
+                        <input type="datetime-local" class="form-control" id="timestamp" name="timestamp" value="" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="origin_account">Cuenta Origen</label>
+                        <input type="text" class="form-control" id="origin_account" name="origin_account" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="destination_account">Cuenta Destino</label>
+                        <input type="text" class="form-control" id="destination_account" name="destination_account" value="" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Descripción</label>
+                        <input type="text" class="form-control" id="description" name="description" value="" required>
+                    </div>
+                    
+                    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Confirmar y Guardar</button>
+                    </div>
+                </div>
+                <div class="review-image">
+                    <h2>Comprobante</h2>
+                    <img id="comprobantePreview" src="" alt="Vista previa del comprobante" style="width: 100%; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+.review-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 20px;
+}
+.review-image {
+    text-align: center;
+}
+@media (max-width: 992px) {
+    .review-layout {
+        grid-template-columns: 1fr;
+    }
+    .review-image {
+        order: -1; /* Muestra la imagen primero en pantallas más pequeñas */
+        margin-bottom: 2rem;
+    }
+}
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #007bff;
+    animation: spin 1s ease infinite;
+    margin: 0 auto;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const comprobanteInput = document.getElementById('comprobanteInput');
+        const comprobantePreview = document.getElementById('comprobantePreview');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const reviewSection = document.getElementById('reviewSection');
+
+        const proofNumberInput = document.getElementById('proof_number');
+        const amountInput = document.getElementById('amount');
+        const timestampInput = document.getElementById('timestamp');
+        const originAccountInput = document.getElementById('origin_account');
+        const destinationAccountInput = document.getElementById('destination_account');
+        const descriptionInput = document.getElementById('description');
+
+        comprobanteInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                // Display image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    comprobantePreview.src = e.target.result;
+                    reviewSection.style.display = 'grid'; // Show the review section
+                };
+                reader.readAsDataURL(file);
+
+                // Show spinner and hide form fields initially
+                loadingSpinner.style.display = 'block';
+                reviewSection.style.display = 'none'; // Hide form fields until data is loaded
+
+                // Send file to backend for extraction
+                const formData = new FormData();
+                formData.append('comprobante', file);
+
+                fetch('/api/extract_data', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loadingSpinner.style.display = 'none';
+                    reviewSection.style.display = 'grid'; // Show the review section with data
+                    if (data.success) {
+                        const extracted = data.data;
+                        proofNumberInput.value = extracted.proof_number || '';
+                        amountInput.value = extracted.amount || '';
+                        timestampInput.value = extracted.timestamp ? extracted.timestamp.substring(0, 16) : ''; // Format for datetime-local
+                        originAccountInput.value = extracted.origin_account || '';
+                        destinationAccountInput.value = extracted.destination_account || '';
+                        descriptionInput.value = extracted.description || '';
+                    } else {
+                        alert('Error al extraer datos: ' + (data.error || 'Desconocido'));
+                        // Clear fields if extraction failed
+                        proofNumberInput.value = '';
+                        amountInput.value = '';
+                        timestampInput.value = '';
+                        originAccountInput.value = '';
+                        destinationAccountInput.value = '';
+                        descriptionInput.value = '';
+                    }
+                })
+                .catch(error => {
+                    loadingSpinner.style.display = 'none';
+                    reviewSection.style.display = 'grid'; // Show the review section even on error
+                    console.error('Error:', error);
+                    alert('Ocurrió un error al comunicarse con el servidor.');
+                    // Clear fields on network error
+                    proofNumberInput.value = '';
+                    amountInput.value = '';
+                    timestampInput.value = '';
+                    originAccountInput.value = '';
+                    destinationAccountInput.value = '';
+                    descriptionInput.value = '';
+                });
+            } else {
+                comprobantePreview.src = '';
+                reviewSection.style.display = 'none';
+            }
+        });
+
+        window.resetForm = function() {
+            comprobanteInput.value = ''; // Clear file input
+            comprobantePreview.src = ''; // Clear image preview
+            reviewSection.style.display = 'none'; // Hide review section
+            loadingSpinner.style.display = 'none'; // Hide spinner
+            // Clear all form fields
+            proofNumberInput.value = '';
+            amountInput.value = '';
+            timestampInput.value = '';
+            originAccountInput.value = '';
+            destinationAccountInput.value = '';
+            descriptionInput.value = '';
+        };
+    });
+</script>
+{% endblock %}

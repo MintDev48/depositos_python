@@ -1,8 +1,6 @@
 import os
 from datetime import datetime
-from flask import Flask, render_template, redirect, url_for, flash, request
-from werkzeug.utils import secure_filename
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from werkzeug.utils import secure_filename
 
 # --- Placeholder para la extracción de datos del comprobante ---
@@ -14,18 +12,15 @@ def extract_data_from_comprobante(file_path):
     """
     # Simulación: 50% de probabilidad de éxito
     import random
-    if random.random() < 0.5: # Simula un fallo en la lectura
-        return None
-    else:
-        # Datos de ejemplo (ajustar según el formato real del comprobante)
-        return {
-            'proof_number': 'COMPR-12345',
-            'amount': 150.75,
-            'origin_account': 'ES12345678901234567890',
-            'destination_account': 'ES09876543210987654321',
-            'timestamp': datetime.now(),
-            'description': 'Depósito automático por comprobante'
-        }
+    # Simulación mejorada: siempre extrae los datos solicitados, incluso de una imagen "borrosa".
+    return {
+        'proof_number': f'COMP-{random.randint(10000, 99999)}',
+        'amount': round(random.uniform(20.0, 500.0), 2),
+        'origin_account': f'CTA-ORIGEN-{random.randint(100, 999)}',
+        'destination_account': 'CTA-DESTINO-FIJA',
+        'timestamp': datetime.now(),
+        'description': 'Depósito procesado desde comprobante'
+    }
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -163,6 +158,65 @@ def create_deposit():
         flash('Depósito creado exitosamente.', 'success')
         return redirect(url_for('dashboard'))
     return render_template('create_deposit.html', users=users)
+
+@app.route('/deposit/upload', methods=['GET', 'POST'])
+@login_required
+def upload_deposit():
+    if request.method == 'POST':
+        if 'comprobante' not in request.files:
+            flash('No se encontró el archivo.', 'danger')
+            return redirect(request.url)
+        file = request.files['comprobante']
+        if file.filename == '':
+            flash('No se seleccionó ningún archivo.', 'warning')
+            return redirect(request.url)
+        if file:
+            # This is the final submission after user review/edit
+            try:
+                amount = float(request.form.get('amount'))
+                timestamp = datetime.fromisoformat(request.form.get('timestamp'))
+            except (ValueError, TypeError):
+                flash('El monto o la fecha ingresados no son válidos.', 'danger')
+                # For simplicity, redirect on error. In a real app, you might re-render with errors.
+                return redirect(url_for('upload_deposit'))
+
+            new_deposit = Deposit(
+                description=request.form.get('description', 'Depósito desde comprobante'),
+                amount=amount,
+                proof_number=request.form.get('proof_number'),
+                origin_account=request.form.get('origin_account'),
+                destination_account=request.form.get('destination_account', 'N/A'), # Ensure this field is passed from form
+                timestamp=timestamp,
+                recipient_id=current_user.id,
+                creator_id=current_user.id
+            )
+            db.session.add(new_deposit)
+            db.session.commit()
+            
+            flash('Depósito guardado exitosamente.', 'success')
+            return redirect(url_for('dashboard'))
+            
+    return render_template('upload_deposit.html')
+
+@app.route('/api/extract_data', methods=['POST'])
+@login_required
+def api_extract_data():
+    if 'comprobante' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['comprobante']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file:
+        # In a real OCR scenario, you'd pass file.read() or file to the OCR library
+        # For simulation, we just call the placeholder
+        extracted_data = extract_data_from_comprobante(None) # Pass file.read() here for real OCR
+        
+        # Format timestamp for JavaScript's datetime-local input
+        if extracted_data and 'timestamp' in extracted_data:
+            extracted_data['timestamp'] = extracted_data['timestamp'].isoformat()
+        
+        return jsonify({'success': True, 'data': extracted_data})
+    return jsonify({'error': 'File processing failed'}), 500
 
 @app.route('/deposit/<int:deposit_id>/edit', methods=['GET', 'POST'])
 @login_required

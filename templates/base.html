@@ -13,6 +13,7 @@
             <div class="navbar-links">
                 {% if current_user.is_authenticated %}
                     <span class="navbar-user">Hola, {{ current_user.username }}</span>
+                    <a href="{{ url_for('upload_deposit') }}">Subir Depósito</a>
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('list_users') }}">Gestionar Usuarios</a>
                     {% endif %}
